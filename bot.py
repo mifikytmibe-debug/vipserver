@@ -31,6 +31,8 @@ from telebot.types import (
     Message,
     CallbackQuery,
 )
+from flask import Flask
+import threading
 
 # ==================== Конфиг/логирование ====================
 load_dotenv()
@@ -574,6 +576,16 @@ def any_text_logger(message: Message):
         bot.reply_to(message, f"✅ Ссылка обновлена для <b>{row['title']}</b>.", reply_markup=admin_games_kb(0))
         return
 
+# -------------------- Flask-сервер для Render --------------------
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "Bot is running!"
+
+def run_flask():
+    app.run(host='0.0.0.0', port=8080)  # Порт 8080 нужен для Render
+
 # ==================== Точка входа ====================
 if __name__ == "__main__":
     # Инициализация БД и начальных данных
@@ -581,5 +593,9 @@ if __name__ == "__main__":
     seed_initial_games_if_empty()
 
     logger.info("Бот запущен.")
+
+    # Запускаем Flask в отдельном потоке
+    threading.Thread(target=run_flask).start()
+
     # Надёжный polling (не падает при единичных сетевых ошибках)
     bot.infinity_polling(timeout=60, long_polling_timeout=50)
